@@ -25,10 +25,12 @@ function openReturn(order, lines) {
   };
 }
 
+// Preserve both stories: approval needs a meaningful reason and a valid refund method.
 function approve(returnRequest, clerkId, reason, refundMethod) {
-  if (!reason) {
+  if (typeof reason !== 'string' || reason.trim().length === 0) {
     throw new Error('a refund approval must carry a reason');
   }
+
   if (!['credit', 'cash'].includes(refundMethod)) {
     throw new Error('invalid refund method');
   }

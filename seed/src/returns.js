@@ -24,7 +24,7 @@ function openReturn(order, lines) {
   };
 }
 
-function approve(returnRequest, clerkId, reason) {
+function approve(returnRequest, clerkId, reason, refundMethod) {
   if (!reason) {
     throw new Error('a refund approval must carry a reason');
   }

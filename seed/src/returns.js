@@ -25,7 +25,7 @@ function openReturn(order, lines) {
 }
 
 function approve(returnRequest, clerkId, reason) {
-  if (!reason) {
+  if (typeof reason !== 'string' || reason.trim().length === 0) {
     throw new Error('a refund approval must carry a reason');
   }
 

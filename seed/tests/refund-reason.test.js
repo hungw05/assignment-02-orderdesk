@@ -1,31 +1,54 @@
 const assert = require('node:assert/strict');
-const { approve } = require('../src/returns');
+const { openReturn, approve } = require('../src/returns');
 
-const returnRequest = {
-    orderId: 'ORDER-001',
-    approvedBy: null,
-    approvedAt: null,
-};
+const lines = [{ productId: 'PRODUCT-001', quantity: 1 }];
+const returnRequest = openReturn({ id: 'ORDER-001' }, lines);
 
-for (const reason of [undefined, null, '', '   ', '\t\n', 123]) {
+assert.equal(returnRequest.refundMethod, null);
+
+const originalRequest = JSON.parse(JSON.stringify(returnRequest));
+
+// Invalid reasons must be rejected with either valid refund method.
+for (const method of ['credit', 'cash']) {
+    for (const reason of [undefined, null, '', '   ', '\t\n', 123]) {
+        assert.throws(
+            () => approve(returnRequest, 'CLERK-001', reason, method),
+            { message: 'a refund approval must carry a reason' }
+        );
+    }
+}
+
+// Invalid refund methods must be rejected even with a valid reason.
+for (const method of [undefined, null, '', 'bank', 'CASH', 123]) {
     assert.throws(
-        () => approve(returnRequest, 'CLERK-001', reason),
-        { message: 'a refund approval must carry a reason' }
+        () => approve(
+            returnRequest,
+            'CLERK-001',
+            'The item was damaged',
+            method
+        ),
+        { message: 'invalid refund method' }
     );
 }
 
-const approved = approve(
-    returnRequest,
-    'CLERK-001',
-    'The item was damaged'
-);
+// Both supported methods must work with a valid reason.
+for (const method of ['credit', 'cash']) {
+    const approved = approve(
+        returnRequest,
+        'CLERK-001',
+        'The item was damaged',
+        method
+    );
 
-assert.equal(approved.reason, 'The item was damaged');
-assert.equal(approved.approvedBy, 'CLERK-001');
-assert.equal(approved.orderId, 'ORDER-001');
-assert.ok(Number.isFinite(Date.parse(approved.approvedAt)));
+    assert.equal(approved.reason, 'The item was damaged');
+    assert.equal(approved.refundMethod, method);
+    assert.equal(approved.approvedBy, 'CLERK-001');
+    assert.equal(approved.orderId, 'ORDER-001');
+    assert.deepEqual(approved.lines, lines);
+    assert.ok(Number.isFinite(Date.parse(approved.approvedAt)));
+}
 
-assert.equal(returnRequest.approvedBy, null);
-assert.equal(returnRequest.approvedAt, null);
+// Approval attempts must not change the original request.
+assert.deepEqual(returnRequest, originalRequest);
 
-console.log('All refund reason tests passed.');
+console.log('All refund reason and method tests passed.');

@@ -21,12 +21,18 @@ function openReturn(order, lines) {
     raisedAt: new Date().toISOString(),
     approvedBy: null,
     approvedAt: null,
+    refundMethod: null,
   };
 }
 
-function approve(returnRequest, clerkId, reason) {
+// Preserve both stories: approval needs a meaningful reason and a valid refund method.
+function approve(returnRequest, clerkId, reason, refundMethod) {
   if (typeof reason !== 'string' || reason.trim().length === 0) {
     throw new Error('a refund approval must carry a reason');
+  }
+
+  if (!['credit', 'cash'].includes(refundMethod)) {
+    throw new Error('invalid refund method');
   }
 
   return {
@@ -34,6 +40,7 @@ function approve(returnRequest, clerkId, reason) {
     approvedBy: clerkId,
     approvedAt: new Date().toISOString(),
     reason,
+    refundMethod,
   };
 }
 
